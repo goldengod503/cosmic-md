@@ -1,10 +1,10 @@
-# cosmic-md
+# Galaxy MD
 
-A fast, minimal markdown viewer for [COSMIC](https://github.com/pop-os/cosmic-epoch) desktop.
+A fast, minimal markdown viewer built for [COSMIC](https://github.com/pop-os/cosmic-epoch) desktop.
 
 Opens a `.md` file and renders it. That's it.
 
-- Native COSMIC theming (dark/light follows system)
+- Native theming (dark/light follows system)
 - Syntax-highlighted code blocks
 - Clickable links (opens in default browser)
 - ~100 lines of Rust
@@ -13,10 +13,10 @@ Opens a `.md` file and renders it. That's it.
 
 ### From .deb (Pop!_OS / Ubuntu)
 
-Download the latest `.deb` from [Releases](https://github.com/goldengod503/cosmic-md/releases) and install:
+Download the latest `.deb` from [Releases](https://github.com/goldengod503/galaxy-md/releases) and install:
 
 ```bash
-sudo dpkg -i cosmic-md_*.deb
+sudo dpkg -i galaxy-md_*.deb
 ```
 
 ### From source
@@ -36,10 +36,10 @@ just install
 ## Usage
 
 ```bash
-cosmic-md README.md
+galaxy-md README.md
 ```
 
-Or double-click any `.md` file in COSMIC Files after installing.
+Or double-click any `.md` file in Files after installing.
 
 ## Building
 

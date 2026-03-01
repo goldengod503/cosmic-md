@@ -1,19 +1,19 @@
 [package]
-name = "cosmic-md"
+name = "galaxy-md"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.90"
-description = "A fast, minimal markdown viewer for COSMIC desktop"
+description = "A fast, minimal markdown viewer built for COSMIC desktop"
 license = "MIT"
-repository = "https://github.com/goldengod503/cosmic-md"
+repository = "https://github.com/goldengod503/galaxy-md"
 
 [package.metadata.deb]
 maintainer = "Peter Benoit"
 section = "utility"
 depends = "$auto"
 assets = [
-    ["target/release/cosmic-md", "usr/bin/", "755"],
-    ["res/com.cosmic.md-viewer.desktop", "usr/share/applications/", "644"],
+    ["target/release/galaxy-md", "usr/bin/", "755"],
+    ["res/com.galaxy.md-viewer.desktop", "usr/share/applications/", "644"],
     ["res/text-markdown.xml", "usr/share/mime/packages/", "644"],
 ]
 

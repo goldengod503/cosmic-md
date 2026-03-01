@@ -1,7 +1,7 @@
 [Desktop Entry]
-Name=Markdown Viewer
-Comment=A fast, minimal markdown viewer for COSMIC
-Exec=cosmic-md %f
+Name=Galaxy MD
+Comment=A fast, minimal markdown viewer for COSMIC desktop
+Exec=galaxy-md %f
 Icon=text-x-markdown
 Terminal=false
 Type=Application

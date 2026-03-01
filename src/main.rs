@@ -22,7 +22,7 @@ impl cosmic::Application for App {
     type Flags = (String, Vec<markdown::Item>);
     type Message = Message;
 
-    const APP_ID: &'static str = "com.cosmic.md-viewer";
+    const APP_ID: &'static str = "com.galaxy.md-viewer";
 
     fn core(&self) -> &Core {
         &self.core
@@ -84,7 +84,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .nth(1)
         .map(PathBuf::from)
         .unwrap_or_else(|| {
-            eprintln!("Usage: cosmic-md <file.md>");
+            eprintln!("Usage: galaxy-md <file.md>");
             std::process::exit(1);
         });
 
