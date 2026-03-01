@@ -14,6 +14,9 @@ install: build
     cp target/release/galaxy-md ~/.local/bin/
     mkdir -p ~/.local/share/applications
     sed 's|Exec=galaxy-md|Exec={{env('HOME')}}/.local/bin/galaxy-md|' res/com.galaxy.md-viewer.desktop > ~/.local/share/applications/com.galaxy.md-viewer.desktop
+    mkdir -p ~/.local/share/icons/hicolor/scalable/apps
+    cp res/icons/com.galaxy.md-viewer.svg ~/.local/share/icons/hicolor/scalable/apps/
+    gtk-update-icon-cache ~/.local/share/icons/hicolor/ 2>/dev/null || true
     mkdir -p ~/.local/share/mime/packages
     cp res/text-markdown.xml ~/.local/share/mime/packages/
     update-mime-database ~/.local/share/mime
@@ -26,6 +29,8 @@ install: build
 uninstall:
     rm -f ~/.local/bin/galaxy-md
     rm -f ~/.local/share/applications/com.galaxy.md-viewer.desktop
+    rm -f ~/.local/share/icons/hicolor/scalable/apps/com.galaxy.md-viewer.svg
+    gtk-update-icon-cache ~/.local/share/icons/hicolor/ 2>/dev/null || true
     rm -f ~/.local/share/mime/packages/text-markdown.xml
     update-mime-database ~/.local/share/mime
     update-desktop-database ~/.local/share/applications/ 2>/dev/null || true

@@ -8,13 +8,14 @@ license = "MIT"
 repository = "https://github.com/goldengod503/galaxy-md"
 
 [package.metadata.deb]
-maintainer = "Peter Benoit"
+maintainer = "Peter Dassenko"
 section = "utility"
 depends = "$auto"
 assets = [
     ["target/release/galaxy-md", "usr/bin/", "755"],
     ["res/com.galaxy.md-viewer.desktop", "usr/share/applications/", "644"],
     ["res/text-markdown.xml", "usr/share/mime/packages/", "644"],
+    ["res/icons/com.galaxy.md-viewer.svg", "usr/share/icons/hicolor/scalable/apps/", "644"],
 ]
 
 [dependencies.libcosmic]

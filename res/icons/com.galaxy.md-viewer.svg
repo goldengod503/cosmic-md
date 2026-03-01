@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <!-- Galaxy gradient background -->
+    <radialGradient id="galaxy" cx="50%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#e879f9"/>
+      <stop offset="30%" stop-color="#a855f7"/>
+      <stop offset="60%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#1e1b4b"/>
+    </radialGradient>
+    <!-- Inner glow -->
+    <radialGradient id="glow" cx="50%" cy="40%" r="40%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Nebula accent -->
+    <radialGradient id="nebula" cx="35%" cy="55%" r="35%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#38bdf8" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Dark circle background -->
+  <circle cx="64" cy="64" r="60" fill="#0f0524"/>
+
+  <!-- Galaxy fill on brain -->
+  <g fill="url(#galaxy)">
+    <!-- Brain shape - left hemisphere -->
+    <path d="M64 28 C54 28, 44 32, 38 40 C32 48, 30 54, 30 62 C30 70, 32 76, 36 82 C40 88, 46 92, 54 96 C58 98, 62 98, 64 96 L64 28Z"/>
+    <!-- Brain shape - right hemisphere -->
+    <path d="M64 28 C74 28, 84 32, 90 40 C96 48, 98 54, 98 62 C98 70, 96 76, 92 82 C88 88, 82 92, 74 96 C70 98, 66 98, 64 96 L64 28Z"/>
+  </g>
+
+  <!-- Nebula overlay -->
+  <g fill="url(#nebula)">
+    <path d="M64 28 C54 28, 44 32, 38 40 C32 48, 30 54, 30 62 C30 70, 32 76, 36 82 C40 88, 46 92, 54 96 C58 98, 62 98, 64 96 L64 28Z"/>
+    <path d="M64 28 C74 28, 84 32, 90 40 C96 48, 98 54, 98 62 C98 70, 96 76, 92 82 C88 88, 82 92, 74 96 C70 98, 66 98, 64 96 L64 28Z"/>
+  </g>
+
+  <!-- Glow overlay -->
+  <g fill="url(#glow)">
+    <path d="M64 28 C54 28, 44 32, 38 40 C32 48, 30 54, 30 62 C30 70, 32 76, 36 82 C40 88, 46 92, 54 96 C58 98, 62 98, 64 96 L64 28Z"/>
+    <path d="M64 28 C74 28, 84 32, 90 40 C96 48, 98 54, 98 62 C98 70, 96 76, 92 82 C88 88, 82 92, 74 96 C70 98, 66 98, 64 96 L64 28Z"/>
+  </g>
+
+  <!-- Brain folds/sulci -->
+  <g fill="none" stroke="#1e1b4b" stroke-width="1.8" stroke-linecap="round" opacity="0.5">
+    <!-- Center divide -->
+    <line x1="64" y1="30" x2="64" y2="96"/>
+    <!-- Left folds -->
+    <path d="M40 50 C46 48, 54 50, 62 48"/>
+    <path d="M34 62 C42 58, 52 62, 62 60"/>
+    <path d="M36 74 C44 70, 52 74, 62 72"/>
+    <path d="M42 86 C50 82, 56 84, 62 84"/>
+    <!-- Right folds -->
+    <path d="M88 50 C82 48, 74 50, 66 48"/>
+    <path d="M94 62 C86 58, 76 62, 66 60"/>
+    <path d="M92 74 C84 70, 76 74, 66 72"/>
+    <path d="M86 86 C78 82, 72 84, 66 84"/>
+  </g>
+
+  <!-- Stars scattered on the brain -->
+  <g fill="#ffffff">
+    <circle cx="45" cy="42" r="1.2" opacity="0.9"/>
+    <circle cx="52" cy="55" r="0.8" opacity="0.7"/>
+    <circle cx="38" cy="65" r="1.0" opacity="0.8"/>
+    <circle cx="48" cy="78" r="0.7" opacity="0.6"/>
+    <circle cx="55" cy="35" r="0.9" opacity="0.8"/>
+    <circle cx="42" cy="88" r="0.8" opacity="0.7"/>
+    <circle cx="83" cy="42" r="1.2" opacity="0.9"/>
+    <circle cx="76" cy="55" r="0.8" opacity="0.7"/>
+    <circle cx="90" cy="65" r="1.0" opacity="0.8"/>
+    <circle cx="80" cy="78" r="0.7" opacity="0.6"/>
+    <circle cx="73" cy="35" r="0.9" opacity="0.8"/>
+    <circle cx="86" cy="88" r="0.8" opacity="0.7"/>
+    <circle cx="70" cy="45" r="1.1" opacity="0.85"/>
+    <circle cx="58" cy="68" r="0.9" opacity="0.75"/>
+    <circle cx="72" cy="70" r="1.0" opacity="0.8"/>
+    <circle cx="50" cy="46" r="0.6" opacity="0.5"/>
+    <circle cx="78" cy="60" r="0.6" opacity="0.5"/>
+  </g>
+
+  <!-- Sparkle/flare highlights -->
+  <g stroke="#ffffff" stroke-width="0.8" opacity="0.6">
+    <line x1="45" y1="40" x2="45" y2="44"/>
+    <line x1="43" y1="42" x2="47" y2="42"/>
+    <line x1="83" y1="40" x2="83" y2="44"/>
+    <line x1="81" y1="42" x2="85" y2="42"/>
+    <line x1="70" y1="43" x2="70" y2="47"/>
+    <line x1="68" y1="45" x2="72" y2="45"/>
+  </g>
+</svg>

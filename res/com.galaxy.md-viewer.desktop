@@ -2,7 +2,7 @@
 Name=Galaxy MD
 Comment=A fast, minimal markdown viewer for COSMIC desktop
 Exec=galaxy-md %f
-Icon=text-x-markdown
+Icon=com.galaxy.md-viewer
 Terminal=false
 Type=Application
 Categories=Utility;TextEditor;
