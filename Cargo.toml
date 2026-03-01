@@ -14,6 +14,7 @@ depends = "$auto"
 assets = [
     ["target/release/cosmic-md", "usr/bin/", "755"],
     ["res/com.cosmic.md-viewer.desktop", "usr/share/applications/", "644"],
+    ["res/text-markdown.xml", "usr/share/mime/packages/", "644"],
 ]
 
 [dependencies.libcosmic]
