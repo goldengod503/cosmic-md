@@ -5,7 +5,7 @@ edition = "2024"
 rust-version = "1.90"
 description = "A fast, minimal markdown viewer for COSMIC desktop"
 license = "MIT"
-repository = "https://github.com/peterbenoit/cosmic-md"
+repository = "https://github.com/goldengod503/cosmic-md"
 
 [package.metadata.deb]
 maintainer = "Peter Benoit"

@@ -13,7 +13,7 @@ Opens a `.md` file and renders it. That's it.
 
 ### From .deb (Pop!_OS / Ubuntu)
 
-Download the latest `.deb` from [Releases](https://github.com/peterbenoit/cosmic-md/releases) and install:
+Download the latest `.deb` from [Releases](https://github.com/goldengod503/cosmic-md/releases) and install:
 
 ```bash
 sudo dpkg -i cosmic-md_*.deb
