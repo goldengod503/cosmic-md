@@ -117,20 +117,61 @@ fn render_sections<'a>(
     Column::with_children(sections).spacing(16).into()
 }
 
+// Mirror the option set used by cosmic::widget::markdown::parse so that the
+// Select Text view interprets the same syntax the formatted view does.
+// Source: libcosmic iced/widget/src/markdown.rs:586-589 (rev a37be90).
+fn parser_options() -> pulldown_cmark::Options {
+    use pulldown_cmark::Options;
+    Options::ENABLE_YAML_STYLE_METADATA_BLOCKS
+        | Options::ENABLE_PLUSES_DELIMITED_METADATA_BLOCKS
+        | Options::ENABLE_TABLES
+        | Options::ENABLE_STRIKETHROUGH
+}
+
 fn markdown_to_plain_text(source: &str) -> String {
     use pulldown_cmark::{Event, Parser, Tag, TagEnd};
 
-    let parser = Parser::new(source);
+    let parser = Parser::new_ext(source, parser_options());
     let mut output = String::new();
     let mut list_index: Option<u64> = None;
+    // Front matter is parsed (so it isn't mistaken for a rule/heading) but
+    // hidden, mirroring the formatted view which renders nothing for it.
+    let mut in_metadata = false;
+    // Table cells accumulate into `cell`; each completed row is joined with
+    // " | " so a table copies as readable pipe-separated rows rather than a
+    // run-on string.
+    let mut row: Vec<String> = Vec::new();
+    let mut cell: Option<String> = None;
 
     for event in parser {
         match event {
-            Event::Text(text) | Event::Code(text) => {
-                output.push_str(&text);
+            Event::Start(Tag::MetadataBlock(_)) => in_metadata = true,
+            Event::End(TagEnd::MetadataBlock(_)) => in_metadata = false,
+            _ if in_metadata => {}
+
+            Event::Start(Tag::TableCell) => cell = Some(String::new()),
+            Event::End(TagEnd::TableCell) => {
+                row.push(cell.take().unwrap_or_default().trim().to_string());
             }
-            Event::SoftBreak => output.push(' '),
-            Event::HardBreak => output.push('\n'),
+            Event::End(TagEnd::TableHead) | Event::End(TagEnd::TableRow) => {
+                output.push_str(&row.join(" | "));
+                output.push('\n');
+                row.clear();
+            }
+            Event::End(TagEnd::Table) => output.push('\n'),
+
+            Event::Text(text) | Event::Code(text) => match cell.as_mut() {
+                Some(c) => c.push_str(&text),
+                None => output.push_str(&text),
+            },
+            Event::SoftBreak => match cell.as_mut() {
+                Some(c) => c.push(' '),
+                None => output.push(' '),
+            },
+            Event::HardBreak => match cell.as_mut() {
+                Some(c) => c.push(' '),
+                None => output.push('\n'),
+            },
             Event::Start(Tag::Heading { .. }) => {
                 if !output.is_empty() && !output.ends_with('\n') {
                     output.push('\n');
@@ -419,5 +460,76 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     cosmic::app::run::<App>(settings, (title, items, source, path))?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::markdown_to_plain_text;
+
+    #[test]
+    fn table_serializes_as_pipe_separated_rows() {
+        let md = "| A | B |\n|---|---|\n| 1 | 2 |";
+
+        let out = markdown_to_plain_text(md);
+
+        assert_eq!(out, "A | B\n1 | 2");
+    }
+
+    #[test]
+    fn table_does_not_run_cells_together() {
+        // Regression: with tables disabled a 2x2 table copied as the run-on
+        // string "AB12". Cells must stay separated.
+        let out = markdown_to_plain_text("| A | B |\n|---|---|\n| 1 | 2 |");
+
+        assert!(!out.contains("AB12"), "cells ran together: {out:?}");
+        assert!(out.contains(" | "), "missing cell separator: {out:?}");
+    }
+
+    #[test]
+    fn strikethrough_keeps_inner_text_without_markers() {
+        let out = markdown_to_plain_text("~~gone~~ and here");
+
+        assert_eq!(out, "gone and here");
+    }
+
+    #[test]
+    fn task_list_items_render_literal_checkboxes() {
+        // The formatted view does not enable ENABLE_TASKLISTS, so checkboxes
+        // stay literal text here too — the two views agree.
+        let out = markdown_to_plain_text("- [ ] todo\n- [x] done");
+
+        assert_eq!(out, "  • [ ] todo\n  • [x] done");
+    }
+
+    #[test]
+    fn nested_lists_render_every_item() {
+        let out = markdown_to_plain_text("- a\n  - b\n- c");
+
+        assert!(out.contains("• a"), "{out:?}");
+        assert!(out.contains("• b"), "{out:?}");
+        assert!(out.contains("• c"), "{out:?}");
+    }
+
+    #[test]
+    fn ordered_list_numbers_items() {
+        let out = markdown_to_plain_text("1. first\n2. second");
+
+        assert_eq!(out, "  1. first\n  2. second");
+    }
+
+    #[test]
+    fn code_block_preserves_content() {
+        let out = markdown_to_plain_text("```rust\nlet x = 1;\n```");
+
+        assert_eq!(out, "let x = 1;");
+    }
+
+    #[test]
+    fn yaml_front_matter_is_hidden() {
+        // Mirrors the formatted view, which renders nothing for front matter.
+        let out = markdown_to_plain_text("---\ntitle: Hidden\n---\n\nBody text");
+
+        assert_eq!(out, "Body text");
+    }
 }
 
