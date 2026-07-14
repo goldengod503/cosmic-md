@@ -41,7 +41,10 @@ const TN_SELECTION: Color = Color {
 struct App {
     core: Core,
     items: Vec<markdown::Item>,
-    editor_content: text_editor::Content,
+    // Lazily built plain-text buffer for Select Text mode, cached and keyed on
+    // `source`: None means "not built for the current source". Invalidated in
+    // App::load so a stale buffer never outlives its source.
+    editor_content: Option<text_editor::Content>,
     source: String,
     path: PathBuf,
     selectable_mode: bool,
@@ -229,9 +232,18 @@ impl App {
     // here so items and source can never drift out of sync.
     fn load(&mut self, source: String) {
         self.items = markdown::parse(&source).collect();
-        let plain_text = markdown_to_plain_text(&source);
-        self.editor_content = text_editor::Content::with_text(&plain_text);
         self.source = source;
+        // Invalidate the cached plain-text buffer. Rebuild it eagerly only if
+        // Select Text is currently on screen; otherwise defer to first toggle.
+        self.editor_content = None;
+        if self.selectable_mode {
+            self.rebuild_editor_content();
+        }
+    }
+
+    fn rebuild_editor_content(&mut self) {
+        let plain_text = markdown_to_plain_text(&self.source);
+        self.editor_content = Some(text_editor::Content::with_text(&plain_text));
     }
 }
 
@@ -256,7 +268,7 @@ impl cosmic::Application for App {
         let mut app = App {
             core,
             items: Vec::new(),
-            editor_content: text_editor::Content::new(),
+            editor_content: None,
             source: String::new(),
             path,
             selectable_mode: false,
@@ -297,15 +309,19 @@ impl cosmic::Application for App {
                 }
             }
             Message::EditorAction(action) => {
-                if !action.is_edit() {
-                    self.editor_content.perform(action);
+                if let Some(content) = &mut self.editor_content
+                    && !action.is_edit()
+                {
+                    content.perform(action);
                 }
             }
             Message::ToggleSelectable => {
                 self.selectable_mode = !self.selectable_mode;
-                if self.selectable_mode {
-                    let plain_text = markdown_to_plain_text(&self.source);
-                    self.editor_content = text_editor::Content::with_text(&plain_text);
+                // Build the buffer only if it isn't already cached for the
+                // current source, so toggling back and forth keeps the cursor
+                // and selection intact.
+                if self.selectable_mode && self.editor_content.is_none() {
+                    self.rebuild_editor_content();
                 }
             }
         }
@@ -382,8 +398,10 @@ impl cosmic::Application for App {
     }
 
     fn view(&self) -> Element<'_, Self::Message> {
-        if self.selectable_mode {
-            let editor = cosmic::widget::TextEditor::new(&self.editor_content)
+        // In selectable mode the cache is always populated (ToggleSelectable
+        // and App::load both build it); as_ref lets view stay non-mutating.
+        if let (true, Some(content)) = (self.selectable_mode, self.editor_content.as_ref()) {
+            let editor = cosmic::widget::TextEditor::new(content)
                 .on_action(Message::EditorAction)
                 .padding(24)
                 .size(16)
