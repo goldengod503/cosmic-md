@@ -21,6 +21,9 @@ const fn tn(hex: u32) -> Color {
     }
 }
 
+// Cap on the markdown file size we will read into memory (10 MB).
+const MAX_FILE_BYTES: u64 = 10 * 1024 * 1024;
+
 const TN_BG: Color = tn(0x1a1b26);
 const TN_BG_DARK: Color = tn(0x16161e);
 const TN_BG_LIGHT: Color = tn(0x24283b);
@@ -441,6 +444,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         eprintln!("Failed to resolve {}: {e}", path.display());
         std::process::exit(1);
     });
+
+    // Guard against loading a huge file into memory: galaxy-md is registered
+    // as the default .md handler, so a stray multi-gigabyte file could be
+    // opened by accident. Fail closed rather than risk exhausting memory.
+    if let Ok(meta) = std::fs::metadata(&path)
+        && meta.len() > MAX_FILE_BYTES
+    {
+        eprintln!(
+            "Refusing to open {}: {} bytes exceeds the {} MB limit",
+            path.display(),
+            meta.len(),
+            MAX_FILE_BYTES / (1024 * 1024)
+        );
+        std::process::exit(1);
+    }
 
     let source = std::fs::read_to_string(&path).unwrap_or_else(|e| {
         eprintln!("Failed to read {}: {e}", path.display());
