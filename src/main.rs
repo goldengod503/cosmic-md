@@ -223,9 +223,21 @@ fn markdown_to_plain_text(source: &str) -> String {
     output.trim_end().to_string()
 }
 
+impl App {
+    // The single place the source -> derived-state invariant lives. Every code
+    // path that changes the document (startup, live reload) funnels through
+    // here so items and source can never drift out of sync.
+    fn load(&mut self, source: String) {
+        self.items = markdown::parse(&source).collect();
+        let plain_text = markdown_to_plain_text(&source);
+        self.editor_content = text_editor::Content::with_text(&plain_text);
+        self.source = source;
+    }
+}
+
 impl cosmic::Application for App {
     type Executor = executor::Default;
-    type Flags = (String, Vec<markdown::Item>, String, PathBuf);
+    type Flags = (String, String, PathBuf);
     type Message = Message;
 
     const APP_ID: &'static str = "com.galaxy.md-viewer";
@@ -239,18 +251,17 @@ impl cosmic::Application for App {
     }
 
     fn init(mut core: Core, flags: Self::Flags) -> (Self, cosmic::app::Task<Self::Message>) {
-        let (title, items, source, path) = flags;
+        let (title, source, path) = flags;
         core.set_header_title(title);
-        let plain_text = markdown_to_plain_text(&source);
-        let editor_content = text_editor::Content::with_text(&plain_text);
-        let app = App {
+        let mut app = App {
             core,
-            items,
-            editor_content,
-            source,
+            items: Vec::new(),
+            editor_content: text_editor::Content::new(),
+            source: String::new(),
             path,
             selectable_mode: false,
         };
+        app.load(source);
         (app, cosmic::app::Task::none())
     }
 
@@ -282,10 +293,7 @@ impl cosmic::Application for App {
             }
             Message::FileChanged => {
                 if let Ok(source) = std::fs::read_to_string(&self.path) {
-                    self.items = markdown::parse(&source).collect();
-                    let plain_text = markdown_to_plain_text(&source);
-                    self.editor_content = text_editor::Content::with_text(&plain_text);
-                    self.source = source;
+                    self.load(source);
                 }
             }
             Message::EditorAction(action) => {
@@ -470,12 +478,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or_else(|| "Markdown Viewer".into());
 
-    let items: Vec<markdown::Item> = markdown::parse(&source).collect();
-
     let settings = Settings::default()
         .size(cosmic::iced::Size::new(900.0, 700.0));
 
-    cosmic::app::run::<App>(settings, (title, items, source, path))?;
+    cosmic::app::run::<App>(settings, (title, source, path))?;
 
     Ok(())
 }
