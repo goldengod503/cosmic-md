@@ -611,4 +611,3 @@ mod tests {
         assert_eq!(out, "Body text");
     }
 }
-
