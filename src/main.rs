@@ -261,23 +261,41 @@ impl cosmic::Application for App {
     }
 
     fn subscription(&self) -> cosmic::iced::Subscription<Self::Message> {
-        let path = self.path.clone();
+        let target = self.path.clone();
         cosmic::iced::Subscription::run_with_id(
             "file-watcher",
             cosmic::iced_futures::stream::channel(1, move |mut sender| {
-                let path = path.clone();
+                let target = target.clone();
                 async move {
                     use cosmic::iced_futures::futures::SinkExt;
                     use notify::Watcher;
 
+                    // Watch the PARENT directory rather than the file itself.
+                    // Editors that save via write-temp+rename (Vim safe-write,
+                    // VS Code) replace the file's inode; a watch bound to the
+                    // old inode goes deaf after the first save. Watching the
+                    // directory and filtering by the target path survives the
+                    // rename, so Create/Modify/Remove-then-Create at the path
+                    // all keep reload working.
+                    let dir = target
+                        .parent()
+                        .map(std::path::Path::to_path_buf)
+                        .unwrap_or_else(|| std::path::PathBuf::from("."));
+
                     let (tx, mut rx) = cosmic::iced::futures::channel::mpsc::channel(1);
+                    let filter_target = target.clone();
                     let mut watcher = notify::recommended_watcher(
                         move |event: Result<notify::Event, notify::Error>| {
                             if let Ok(event) = event {
-                                if matches!(
+                                let touches_target =
+                                    event.paths.iter().any(|p| p == &filter_target);
+                                let relevant_kind = matches!(
                                     event.kind,
-                                    notify::EventKind::Modify(_) | notify::EventKind::Create(_)
-                                ) {
+                                    notify::EventKind::Modify(_)
+                                        | notify::EventKind::Create(_)
+                                        | notify::EventKind::Remove(_)
+                                );
+                                if touches_target && relevant_kind {
                                     let _ = tx.clone().try_send(());
                                 }
                             }
@@ -286,8 +304,8 @@ impl cosmic::Application for App {
                     .expect("failed to create file watcher");
 
                     watcher
-                        .watch(&path, notify::RecursiveMode::NonRecursive)
-                        .expect("failed to watch file");
+                        .watch(&dir, notify::RecursiveMode::NonRecursive)
+                        .expect("failed to watch directory");
 
                     loop {
                         use cosmic::iced::futures::StreamExt;
