@@ -317,7 +317,19 @@ impl cosmic::Application for App {
     fn update(&mut self, message: Self::Message) -> cosmic::app::Task<Self::Message> {
         match message {
             Message::LinkClicked(url) => {
-                let _ = open::that_in_background(url.to_string());
+                // Links come from untrusted .md content, so only hand known-safe
+                // schemes to the OS opener; anything else (file, javascript,
+                // custom app handlers, ...) is logged and ignored.
+                match url.scheme() {
+                    "http" | "https" | "mailto" => {
+                        if let Err(e) = open::that(url.as_str()) {
+                            eprintln!("Failed to open {url}: {e}");
+                        }
+                    }
+                    other => {
+                        eprintln!("Ignoring link with unsupported scheme '{other}': {url}")
+                    }
+                }
             }
             Message::FileChanged => {
                 // Read off the update loop so a slow disk can't stall
