@@ -317,8 +317,13 @@ impl cosmic::Application for App {
                 let _ = open::that_in_background(url.to_string());
             }
             Message::FileChanged => {
-                if let Ok(source) = std::fs::read_to_string(&self.path) {
-                    self.load(source);
+                match std::fs::read_to_string(&self.path) {
+                    Ok(source) => self.load(source),
+                    // An editor's truncate-then-write can race this read;
+                    // surface it rather than silently keeping stale content.
+                    Err(e) => {
+                        eprintln!("Failed to reload {}: {e}", self.path.display())
+                    }
                 }
             }
             Message::EditorAction(action) => {
