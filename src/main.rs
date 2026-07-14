@@ -482,13 +482,26 @@ impl cosmic::Application for App {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let path = std::env::args()
-        .nth(1)
-        .map(PathBuf::from)
-        .unwrap_or_else(|| {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+
+    if args.iter().any(|a| a == "-h" || a == "--help") {
+        println!("galaxy-md — a fast, minimal markdown viewer for COSMIC");
+        println!();
+        println!("Usage: galaxy-md <file.md>");
+        return Ok(());
+    }
+
+    let path = match args.first() {
+        Some(arg) => PathBuf::from(arg),
+        None => {
             eprintln!("Usage: galaxy-md <file.md>");
             std::process::exit(1);
-        });
+        }
+    };
+
+    if args.len() > 1 {
+        eprintln!("Ignoring extra arguments: {}", args[1..].join(", "));
+    }
 
     let path = std::fs::canonicalize(&path).unwrap_or_else(|e| {
         eprintln!("Failed to resolve {}: {e}", path.display());
