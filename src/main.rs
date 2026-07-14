@@ -5,10 +5,14 @@ use cosmic::iced::border;
 use cosmic::iced_core::text::Highlight;
 use cosmic::iced_core::{padding, Background, Color, Length};
 use cosmic::iced_runtime::Appearance;
+use cosmic::iced_core::mouse::ScrollDelta;
+use cosmic::iced_core::widget::Id as ScrollId;
 use cosmic::iced_widget::container;
+use cosmic::iced_widget::scrollable::{scroll_by, AbsoluteOffset};
 use cosmic::iced_widget::text_editor as ied_text_editor;
+use cosmic::iced_widget::Stack;
 use cosmic::theme;
-use cosmic::widget::{markdown, scrollable, text_editor};
+use cosmic::widget::{markdown, mouse_area, scrollable, text_editor, Space};
 use cosmic::{executor, prelude::*, Core};
 
 // Tokyo Night palette (Night variant) — mirrors enkia.tokyo-night.
@@ -23,6 +27,12 @@ const fn tn(hex: u32) -> Color {
 
 // Cap on the markdown file size we will read into memory (10 MB).
 const MAX_FILE_BYTES: u64 = 10 * 1024 * 1024;
+
+// Smooth-scroll tuning. SCROLL_STEP mirrors the offset the built-in scrollable
+// applies per wheel line (scrollable.rs:923-953, a hardcoded 60px); SCROLL_EASE
+// is the fraction of the remaining distance consumed each animation frame.
+const SCROLL_STEP: f32 = 60.0;
+const SCROLL_EASE: f32 = 0.18;
 
 const TN_BG: Color = tn(0x1a1b26);
 const TN_BG_DARK: Color = tn(0x16161e);
@@ -48,6 +58,12 @@ struct App {
     source: String,
     path: PathBuf,
     selectable_mode: bool,
+    // Smooth-scroll state. A transparent overlay captures wheel events so the
+    // scrollable never instant-jumps; `scroll_pending` holds the offset delta
+    // still to be applied, drained toward zero each frame while animating.
+    scroll_id: ScrollId,
+    scroll_pending: f32,
+    scroll_animating: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -59,6 +75,10 @@ enum Message {
     FileLoaded(Result<String, String>),
     EditorAction(text_editor::Action),
     ToggleSelectable,
+    // A wheel/trackpad scroll captured by the overlay before the scrollable
+    // sees it. AnimateScroll is one frame tick of the easing loop.
+    Wheel(ScrollDelta),
+    AnimateScroll,
 }
 
 // Group markdown items into sections (heading + following body) so the body
@@ -288,6 +308,9 @@ impl cosmic::Application for App {
             source: String::new(),
             path,
             selectable_mode: false,
+            scroll_id: ScrollId::new("md-body"),
+            scroll_pending: 0.0,
+            scroll_animating: false,
         };
         app.load(source);
         (app, cosmic::app::Task::none())
@@ -364,13 +387,51 @@ impl cosmic::Application for App {
                     self.rebuild_editor_content();
                 }
             }
+            Message::Wheel(delta) => match delta {
+                // Wheel detents arrive as discrete lines; replicate the widget's
+                // 60px/line mapping (negated to match its offset convention) but
+                // route it through the easing accumulator instead of jumping.
+                ScrollDelta::Lines { y, .. } => {
+                    self.scroll_pending += -SCROLL_STEP * y;
+                    self.scroll_animating = true;
+                }
+                // Trackpads already deliver smooth pixel deltas; apply them
+                // immediately so we don't add latency to input that's fine.
+                ScrollDelta::Pixels { x, y } => {
+                    return scroll_by(
+                        self.scroll_id.clone(),
+                        AbsoluteOffset { x: -x, y: -y },
+                    );
+                }
+            },
+            Message::AnimateScroll => {
+                // Consume a fraction of the remaining distance; snap the last
+                // sub-pixel tail so the animation terminates and the frames
+                // subscription can switch off.
+                let step = if self.scroll_pending.abs() <= 1.0 {
+                    std::mem::take(&mut self.scroll_pending)
+                } else {
+                    let s = self.scroll_pending * SCROLL_EASE;
+                    self.scroll_pending -= s;
+                    s
+                };
+                if self.scroll_pending == 0.0 {
+                    self.scroll_animating = false;
+                }
+                if step != 0.0 {
+                    return scroll_by(
+                        self.scroll_id.clone(),
+                        AbsoluteOffset { x: 0.0, y: step },
+                    );
+                }
+            }
         }
         cosmic::app::Task::none()
     }
 
     fn subscription(&self) -> cosmic::iced::Subscription<Self::Message> {
         let target = self.path.clone();
-        cosmic::iced::Subscription::run_with_id(
+        let watcher = cosmic::iced::Subscription::run_with_id(
             "file-watcher",
             cosmic::iced_futures::stream::channel(1, move |mut sender| {
                 let target = target.clone();
@@ -434,7 +495,18 @@ impl cosmic::Application for App {
                     }
                 }
             }),
-        )
+        );
+
+        // Only tick every frame while a wheel animation is in flight, so an
+        // idle viewer isn't woken 60 times a second.
+        if self.scroll_animating {
+            cosmic::iced::Subscription::batch([
+                watcher,
+                cosmic::iced::window::frames().map(|_| Message::AnimateScroll),
+            ])
+        } else {
+            watcher
+        }
     }
 
     fn view(&self) -> Element<'_, Self::Message> {
@@ -476,7 +548,19 @@ impl cosmic::Application for App {
                 .padding(24)
                 .width(Length::Fill);
 
-            root_container(scrollable(body))
+            let scroller = scrollable(body).id(self.scroll_id.clone());
+
+            // Transparent overlay on top of the scrollable: it captures wheel
+            // events (feeding the easing loop) but returns Ignored for clicks
+            // and drags, so links and the scrollbar still work underneath.
+            let overlay = mouse_area(Space::new(Length::Fill, Length::Fill))
+                .on_scroll(Message::Wheel);
+
+            let stacked = Stack::with_children(vec![scroller.into(), overlay.into()])
+                .width(Length::Fill)
+                .height(Length::Fill);
+
+            root_container(stacked)
         }
     }
 }
