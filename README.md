@@ -4,7 +4,7 @@ A fast, minimal markdown viewer built for [COSMIC](https://github.com/pop-os/cos
 
 Opens a `.md` file and renders it. That's it.
 
-- Native theming (dark/light follows system)
+- Tokyo Night dark theme (always on, independent of the system theme)
 - Syntax-highlighted code blocks
 - Clickable links (opens in default browser)
 - ~100 lines of Rust
