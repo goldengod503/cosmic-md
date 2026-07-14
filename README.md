@@ -7,7 +7,10 @@ Opens a `.md` file and renders it. That's it.
 - Tokyo Night dark theme (always on, independent of the system theme)
 - Syntax-highlighted code blocks
 - Clickable links (opens in default browser)
-- ~100 lines of Rust
+- Smooth mouse-wheel scrolling
+- Live reload when the file changes on disk
+- Select Text mode for copy/paste
+- Single-file Rust app
 
 ## Install
 
