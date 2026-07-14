@@ -134,6 +134,19 @@ fn parser_options() -> pulldown_cmark::Options {
         | Options::ENABLE_STRIKETHROUGH
 }
 
+// The full-window Tokyo Night background wrapper shared by both view() modes.
+fn root_container<'a>(content: impl Into<Element<'a, Message>>) -> Element<'a, Message> {
+    cosmic::widget::container(content)
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .style(|_theme| container::Style {
+            background: Some(Background::Color(TN_BG)),
+            text_color: Some(TN_FG),
+            ..Default::default()
+        })
+        .into()
+}
+
 fn markdown_to_plain_text(source: &str) -> String {
     use pulldown_cmark::{Event, Parser, Tag, TagEnd};
 
@@ -416,15 +429,7 @@ impl cosmic::Application for App {
                     },
                 )));
 
-            cosmic::widget::container(editor)
-                .width(Length::Fill)
-                .height(Length::Fill)
-                .style(|_theme| container::Style {
-                    background: Some(Background::Color(TN_BG)),
-                    text_color: Some(TN_FG),
-                    ..Default::default()
-                })
-                .into()
+            root_container(editor)
         } else {
             let style = markdown::Style {
                 inline_code_highlight: Highlight {
@@ -444,15 +449,7 @@ impl cosmic::Application for App {
                 .padding(24)
                 .width(Length::Fill);
 
-            cosmic::widget::container(scrollable(body))
-                .width(Length::Fill)
-                .height(Length::Fill)
-                .style(|_theme| container::Style {
-                    background: Some(Background::Color(TN_BG)),
-                    text_color: Some(TN_FG),
-                    ..Default::default()
-                })
-                .into()
+            root_container(scrollable(body))
         }
     }
 }
