@@ -54,6 +54,9 @@ struct App {
 enum Message {
     LinkClicked(markdown::Url),
     FileChanged,
+    // Result of the async reload read. Err carries the stringified io::Error
+    // (io::Error is not Clone, which Message requires).
+    FileLoaded(Result<String, String>),
     EditorAction(text_editor::Action),
     ToggleSelectable,
 }
@@ -317,15 +320,22 @@ impl cosmic::Application for App {
                 let _ = open::that_in_background(url.to_string());
             }
             Message::FileChanged => {
-                match std::fs::read_to_string(&self.path) {
-                    Ok(source) => self.load(source),
-                    // An editor's truncate-then-write can race this read;
-                    // surface it rather than silently keeping stale content.
-                    Err(e) => {
-                        eprintln!("Failed to reload {}: {e}", self.path.display())
-                    }
-                }
+                // Read off the update loop so a slow disk can't stall
+                // rendering. At most one reload is in flight per change event;
+                // if several overlap they all read the same on-disk file, so
+                // out-of-order completion just re-applies the current content.
+                let path = self.path.clone();
+                return cosmic::app::Task::perform(
+                    async move { std::fs::read_to_string(&path).map_err(|e| e.to_string()) },
+                    |result| cosmic::action::app(Message::FileLoaded(result)),
+                );
             }
+            Message::FileLoaded(result) => match result {
+                Ok(source) => self.load(source),
+                // An editor's truncate-then-write can race the read; surface it
+                // rather than silently keeping stale content.
+                Err(e) => eprintln!("Failed to reload {}: {e}", self.path.display()),
+            },
             Message::EditorAction(action) => {
                 if let Some(content) = &mut self.editor_content
                     && !action.is_edit()
