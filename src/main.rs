@@ -284,7 +284,7 @@ impl cosmic::Application for App {
 
                     let (tx, mut rx) = cosmic::iced::futures::channel::mpsc::channel(1);
                     let filter_target = target.clone();
-                    let mut watcher = notify::recommended_watcher(
+                    let watcher = notify::recommended_watcher(
                         move |event: Result<notify::Event, notify::Error>| {
                             if let Ok(event) = event {
                                 let touches_target =
@@ -300,12 +300,23 @@ impl cosmic::Application for App {
                                 }
                             }
                         },
-                    )
-                    .expect("failed to create file watcher");
+                    );
 
-                    watcher
-                        .watch(&dir, notify::RecursiveMode::NonRecursive)
-                        .expect("failed to watch directory");
+                    // Degrade to a static viewer rather than panicking: inotify
+                    // watch exhaustion (ENOSPC) is a real failure mode and the
+                    // app is still fully usable without live reload.
+                    let mut watcher = match watcher {
+                        Ok(w) => w,
+                        Err(e) => {
+                            eprintln!("Live reload disabled: {e}");
+                            return;
+                        }
+                    };
+
+                    if let Err(e) = watcher.watch(&dir, notify::RecursiveMode::NonRecursive) {
+                        eprintln!("Live reload disabled: {e}");
+                        return;
+                    }
 
                     loop {
                         use cosmic::iced::futures::StreamExt;
